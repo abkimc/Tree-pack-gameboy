@@ -277,7 +277,7 @@
                     <div>AREA:<span id="uiScore">0.00</span></div>
                 </div>
 
-                <!-- VIEWBOX ADJUSTED FOR SCALE 1.0 (3.5 width) -->
+                <!-- VIEWBOX SET TO 3.5 (Zoomed relative to SCALE 1.0) -->
                 <svg id="gameSVG" viewBox="-1.75 -1.75 3.5 3.5" preserveAspectRatio="xMidYMid meet">
                     <g id="treeLayer"></g>
                     <rect id="scoreBox" x="0" y="0" width="0" height="0"></rect>
@@ -289,7 +289,7 @@
             </div>
         </div>
 
-        <!-- AUDIO ELEMENT -->
+        <!-- AUDIO ELEMENT - REQUIRES 'theme.mp3' IN THE SAME FOLDER -->
         <audio id="bgm" loop>
             <source src="theme.mp3" type="audio/mpeg">
         </audio>
@@ -319,15 +319,10 @@
                     </div>
 
                     <div class="btn-set">
-                        <div style="position:relative; margin-top:20px;">
-                            <button class="tree-btn action-tree" onclick="handleAddTree()">
-                                <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#009432"/></svg>
-                            </button>
-                            <div class="btn-label">ADD</div>
-                        </div>
+                        <!-- RESET BUTTON (NOW GREEN) -->
                          <div style="position:relative;">
                             <button class="tree-btn action-tree" onclick="resetLevel()">
-                                <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#ea2027"/></svg>
+                                <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#009432"/></svg>
                             </button>
                             <div class="btn-label">RESET</div>
                         </div>
@@ -341,7 +336,7 @@
                     <div class="long-lbl">MUTE</div>
                 </div>
                 <div>
-                    <button class="long-btn" onclick="alert('Controls:\nArrows: Nudge\nDial: Rotate\nGreen: Add Lvl\nRed: Reset')"></button>
+                    <button class="long-btn" onclick="alert('Controls:\nArrows: Nudge\nDial: Rotate\nRed: Reset')"></button>
                     <div class="long-lbl">HELP</div>
                 </div>
             </div>
@@ -360,7 +355,14 @@ const Analytics = {
     pageStartTime: Date.now(),
     levelStartTime: Date.now(),
     
-    actions: { arrow: 0, dial: 0, drag: 0 },
+    // Action Counters
+    actions: {
+        arrow: 0,
+        dial: 0,
+        drag: 0
+    },
+    
+    // Platform Detection
     platform: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'PC',
 
     formURL: "https://docs.google.com/forms/d/e/1FAIpQLSdDspDnJk9WFa8GyZ2dLHlKdrHfusqqHRsRazuj7LYYrnY-_w/formResponse",
@@ -381,7 +383,7 @@ const Analytics = {
         const now = Date.now();
         const duration = ((now - this.levelStartTime) / 1000).toFixed(2);
         
-        console.log(`[Analytics] ${type} | Lvl: ${level} | Dur: ${duration}s`);
+        console.log(`[Analytics] ${type} | Lvl: ${level} | Dur: ${duration}s | Platform: ${this.platform} | Arr: ${this.actions.arrow} | Dial: ${this.actions.dial} | Drag: ${this.actions.drag}`);
 
         const formData = new FormData();
         formData.append(this.entryIDs.session, this.sessionID);
@@ -408,7 +410,7 @@ const Analytics = {
 };
 
 /* =========================================
-   AUDIO
+   AUDIO: HTML5 AUDIO TAG (External File)
    ========================================= */
 const bgm = document.getElementById('bgm');
 
@@ -419,6 +421,7 @@ function tryStartAudio() {
     });
 }
 
+// Start audio on first click/tap
 window.addEventListener('mousedown', tryStartAudio, {once:true});
 window.addEventListener('touchstart', tryStartAudio, {once:true});
 
@@ -443,21 +446,21 @@ window.addEventListener('load', fitScreen);
 const P = { tip:0.8, tr_w:0.15, tr_h:0.2, bs_w:0.7, md_w:0.4, tp_w:0.25, t1:0.5, t2:0.25, bs:0.0, bt:-0.2 };
 const OFFSET_Y = 0.3;
 
-// REVERTED SCALE TO 1.0
+// SCALE 1.0 ensures area math is consistent (1 tree = 1.0 area)
 const SCALE = 1.0; 
 
-// NEW GOAL TABLE
+// GOAL TABLE
 const LEVEL_GOALS = {
     1: 0.8,
     2: 1.4,
     3: 2.1,
-    4: 2.8,
-    5: 3.1,
-    6: 3.7,
-    7: 4.1,
-    8: 4.7,
-    9: 5.1,
-    10: 5.9
+    4: 3.1,
+    5: 3.8,
+    6: 4.1,
+    7: 4.7,
+    8: 5.1,
+    9: 5.9,
+    10: 6.4
 };
 
 const RAW_PTS = [
@@ -505,26 +508,25 @@ function init(l) {
 
     Analytics.log('LEVEL_START', l);
 
-    // LOOK UP GOAL FROM TABLE
-    const winThreshold = LEVEL_GOALS[l] || (l * 0.8); // Fallback just in case
+    if(state.baseArea === 0) {
+        const tempPoly = getPoly(0,0,0);
+        const b = getBounds(tempPoly);
+        const s = Math.max(b.x2-b.x1, b.y2-b.y1);
+        state.baseArea = s*s;
+    }
+
+    // --- UPDATED GOAL LOGIC ---
+    let winThreshold = LEVEL_GOALS[l] || (l * 0.8); 
     
     document.getElementById('uiGoal').innerText = winThreshold.toFixed(2);
     document.getElementById('uiGoal').setAttribute('data-target', winThreshold);
 
     for(let i=0; i<l; i++){
+        // Keep trees spawning in center to stay on screen
         let r=0.5*Math.sqrt(i), th=i*2.4;
         addTree(i, r*Math.cos(th), r*Math.sin(th), 0);
     }
     select(0); update();
-}
-
-function handleAddTree() {
-    if (state.lvl >= 10) {
-        alert("Slow your horses! There are only 10 levels.");
-        Analytics.log('MAX_LEVEL_ATTEMPT', state.lvl);
-        return;
-    }
-    nextLevel();
 }
 
 function addTree(id, x, y, rot) {
@@ -539,6 +541,7 @@ function addTree(id, x, y, rot) {
         if(state.locked) return;
         e.preventDefault(); e.stopPropagation(); select(id);
         
+        // Track Drag Action
         Analytics.actions.drag++;
 
         const p = getSVGPos(e); off = {x: p.x - state.trees[id].x, y: p.y - state.trees[id].y};
@@ -636,7 +639,23 @@ function triggerVictory() {
     };
     
     const showMsg = () => {
-        document.getElementById('msg-overlay').style.display = 'flex';
+        const overlay = document.getElementById('msg-overlay');
+        const btn = overlay.querySelector('button');
+        const txt = overlay.querySelector('div');
+
+        if(state.lvl >= 10) {
+            txt.innerHTML = "GREAT JOB<br>YOU CAN NOW WORK<br>AS AN ELF FOR SANTA";
+            btn.innerText = "RESTART";
+            btn.onclick = () => {
+                state.lvl = 1;
+                init(1);
+            };
+        } else {
+            txt.innerHTML = "GREAT JOB<br>NEXT LEVEL!";
+            btn.innerText = "CONTINUE";
+            btn.onclick = nextLevel;
+        }
+        overlay.style.display = 'flex';
         state.locked = false;
     };
 
@@ -709,7 +728,6 @@ window.addEventListener('touchmove', doRotate, {passive:false});
 
 function nextLevel() { 
     if(state.lvl < 10) init(state.lvl+1); 
-    else handleAddTree(); 
 }
 function resetLevel() { 
     Analytics.log('LEVEL_RESET', state.lvl);
