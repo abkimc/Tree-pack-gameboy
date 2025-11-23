@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TreeBoy: Full Tree Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Case */
+            --case-bg: #f5f6fa;
+            --stripe-1: #009432;
+            --stripe-2: #ea2027;
+            
+            /* Screen */
+            --screen-bg: #c4e538;
+            
+            /* UI */
+            --btn-a: #009432; 
+            --btn-b: #ea2027;
+            --dpad-color: #2f3640; /* Dark Grey for D-Pad Trees */
+            
+            /* Game */
+            --tree-core: #2d3436;
+            --tree-active: #000000;
+            --collision: #ff0000;
+        }
+
+        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            background-color: #2f3640;
+            background-image: radial-gradient(#353b48 15%, transparent 16%);
+            background-size: 25px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        #scaler {
+            transform-origin: center center;
+            transition: transform 0.1s;
+        }
+
+        .console {
+            width: 420px;
+            height: 800px;
+            background-color: var(--case-bg);
+            background-image: 
+                linear-gradient(120deg, 
+                    transparent 60%, 
+                    var(--stripe-1) 60%, var(--stripe-1) 68%, 
+                    var(--case-bg) 68%, var(--case-bg) 70%,
+                    var(--stripe-2) 70%, var(--stripe-2) 78%, 
+                    transparent 78%
+                );
+            border-radius: 20px 20px 60px 20px;
+            box-shadow: 
+                inset 4px 4px 15px rgba(255,255,255,1),
+                inset -5px -5px 20px rgba(0,0,0,0.1),
+                0 40px 80px rgba(0,0,0,0.6);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* --- SCREEN --- */
+        .bezel {
+            background: #718093;
+            border-radius: 15px 15px 50px 15px;
+            padding: 20px 35px 45px 35px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .power-light {
+            width: 8px; height: 8px; background: #e84118; border-radius: 50%;
+            box-shadow: 0 0 5px #e84118; margin-bottom: 5px;
+        }
+
+        .lcd {
+            background: var(--screen-bg);
+            border: 4px solid #4b4b4b;
+            border-radius: 4px;
+            box-shadow: inset 2px 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lcd::before {
+            content:""; position: absolute; inset:0;
+            background: linear-gradient(rgba(0,0,0,0.05) 50%, transparent 50%);
+            background-size: 100% 4px; pointer-events: none; z-index: 10;
+        }
+
+        .hud-bar {
+            position: absolute; top:0; left:0; right:0;
+            background: rgba(45, 52, 54, 0.1);
+            display: flex; justify-content: space-between; padding: 5px 8px;
+            font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #2d3436; font-weight: bold;
+            z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        #gameSVG {
+            width: 100%; aspect-ratio: 1/1; display: block;
+            cursor: crosshair;
+        }
+
+        /* --- CONTROLS --- */
+        .controls {
+            flex: 1; z-index: 5;
+            display: grid; grid-template-rows: 1fr auto; gap: 5px;
+        }
+        
+        .input-zone { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; }
+
+        /* --- NEW TREE D-PAD --- */
+        .dpad-container {
+            width: 140px; height: 140px; 
+            position: relative;
+            align-self: center;
+            /* subtle circular inset for the dpad area */
+            background: rgba(0,0,0,0.03);
+            border-radius: 50%;
+        }
+
+        /* Base class for all tree buttons (Dpad + Action) */
+        .tree-btn {
+            background: none; border: none; padding: 0;
+            cursor: pointer;
+            filter: drop-shadow(0 4px 0 rgba(0,0,0,0.3));
+            transition: transform 0.05s, filter 0.05s;
+            position: absolute;
+            width: 40px; height: 50px; /* D-pad trees are slightly smaller */
+        }
+        .tree-btn:active {
+            transform: translateY(4px) !important; /* Force translation logic override */
+            filter: drop-shadow(0 0 0 rgba(0,0,0,0.3));
+        }
+        .tree-icon { display: block; width: 100%; height: 100%; }
+
+        /* Directional Positioning */
+        /* UP */
+        .pad-up { 
+            top: 5px; left: 50%; 
+            transform: translateX(-50%); 
+        }
+        .pad-up:active { transform: translateX(-50%) translateY(4px) !important; }
+
+        /* DOWN (Rotated 180) */
+        .pad-down { 
+            bottom: 5px; left: 50%; 
+            transform: translateX(-50%) rotate(180deg); 
+        }
+        .pad-down:active { transform: translateX(-50%) rotate(180deg) translateY(-4px) !important; } /* Inverted translate due to rotation */
+
+        /* LEFT (Rotated -90) */
+        .pad-left { 
+            top: 50%; left: 5px; 
+            transform: translateY(-50%) rotate(-90deg); 
+        }
+        .pad-left:active { transform: translateY(-50%) rotate(-90deg) translateY(-4px) !important; }
+
+        /* RIGHT (Rotated 90) */
+        .pad-right { 
+            top: 50%; right: 5px; 
+            transform: translateY(-50%) rotate(90deg); 
+        }
+        .pad-right:active { transform: translateY(-50%) rotate(90deg) translateY(-4px) !important; }
+
+
+        /* --- ACTION BUTTONS (Right Side) --- */
+        .action-zone {
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+        }
+        
+        /* Dial */
+        .dial-surround {
+            width: 140px; height: 140px;
+            background: #dfe4ea; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            margin-bottom: 20px; margin-top: 10px;
+        }
+        .dial-knob {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: #2f3542;
+            position: relative; cursor: grab;
+            border: 3px solid #57606f;
+            background-image: repeating-conic-gradient(#2f3542 0deg, #2f3542 10deg, #222 11deg, #2f3542 12deg);
+        }
+        .dial-knob:active { cursor: grabbing; background: #1e272e; }
+        .dial-dot {
+            position: absolute; top: 10px; left: 50%; width: 10px; height: 10px;
+            background: #fff; border-radius: 50%; transform: translateX(-50%);
+            box-shadow: 0 0 5px #fff;
+        }
+
+        /* Action Buttons (A/B) */
+        .btn-set { 
+            display: flex; gap: 20px; transform: rotate(-10deg); align-items: flex-end; margin-top: 10px;
+        }
+        .action-tree {
+            position: relative; width: 50px; height: 60px; /* A/B are larger */
+            filter: drop-shadow(0 6px 0 rgba(0,0,0,0.3));
+        }
+        .action-tree:active { transform: translateY(6px); filter: drop-shadow(0 0 0 rgba(0,0,0,0.3)); }
+
+        .btn-label {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            font-family: sans-serif; font-size: 10px; font-weight: bold; color: #a4b0be;
+            pointer-events: none;
+        }
+
+        /* Start Select */
+        .bottom-btns { display: flex; justify-content: center; gap: 30px; margin-top: auto; }
+        .long-btn {
+            width: 60px; height: 14px; background: #7f8fa6;
+            border-radius: 10px; border: none; transform: rotate(-10deg);
+            box-shadow: 0 2px 2px rgba(0,0,0,0.2); cursor: pointer;
+        }
+        .long-btn:active { transform: rotate(-10deg) scale(0.95); }
+        .long-lbl {
+            text-align: center; font-family: sans-serif; font-size: 9px; 
+            font-weight: bold; color: #7f8fa6; transform: rotate(-10deg); margin-top:5px;
+        }
+
+        /* SVG */
+        .tree-poly { fill: var(--tree-core); stroke: none; vector-effect: non-scaling-stroke; transition: fill 0.1s; }
+        .tree-group.selected .tree-poly { fill: var(--tree-active); }
+        .tree-group.selected polygon { stroke: #000; stroke-width: 0.05; }
+        .tree-group.collision .tree-poly { fill: transparent; }
+        .tree-group.collision polygon { stroke: var(--collision); stroke-width: 0.1; stroke-dasharray: 0.1 0.1; }
+        #scoreBox { fill: none; stroke: #ff0000; stroke-width: 0.15; stroke-linejoin: miter; vector-effect: non-scaling-stroke; opacity: 0.9; }
+
+    </style>
+</head>
+<body>
+
+<div id="scaler">
+    <div class="console">
+        
+        <div class="bezel">
+            <div style="display:flex; justify-content:space-between; padding: 0 10px;">
+                <div><div class="power-light"></div><div style="font-size:8px; color:#ddd;">BATTERY</div></div>
+                <div style="text-align:right; font-size:12px; color:#fff; font-style:italic; font-weight:bold;">
+                    White <span style="color:var(--stripe-1)">Edition</span>
+                </div>
+            </div>
+
+            <div class="lcd">
+                <div class="hud-bar">
+                    <div>BEST:<span id="uiBest" style="color:#c0392b">---</span></div>
+                    <div>AREA:<span id="uiScore">0.00</span></div>
+                </div>
+
+                <svg id="gameSVG" viewBox="-4.5 -4.5 9 9" preserveAspectRatio="xMidYMid meet">
+                    <g id="treeLayer"></g>
+                    <rect id="scoreBox" x="0" y="0" width="0" height="0"></rect>
+                </svg>
+
+                <div style="position:absolute; bottom:5px; left:8px; font-family: sans-serif; font-size: 10px; font-weight: bold; opacity: 0.6;">
+                    LEVEL <span id="uiLvl">1</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="input-zone">
+                
+                <!-- NEW TREE D-PAD -->
+                <div class="dpad-container">
+                    <!-- UP -->
+                    <button class="tree-btn pad-up" onmousedown="nudge(0, -0.05)" ontouchstart="nudge(0, -0.05)">
+                        <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#2f3640"/></svg>
+                    </button>
+                    <!-- DOWN -->
+                    <button class="tree-btn pad-down" onmousedown="nudge(0, 0.05)" ontouchstart="nudge(0, 0.05)">
+                        <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#2f3640"/></svg>
+                    </button>
+                    <!-- LEFT -->
+                    <button class="tree-btn pad-left" onmousedown="nudge(-0.05, 0)" ontouchstart="nudge(-0.05, 0)">
+                        <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#2f3640"/></svg>
+                    </button>
+                    <!-- RIGHT -->
+                    <button class="tree-btn pad-right" onmousedown="nudge(0.05, 0)" ontouchstart="nudge(0.05, 0)">
+                        <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#2f3640"/></svg>
+                    </button>
+                </div>
+
+                <div class="action-zone">
+                    <div class="dial-surround">
+                        <div class="dial-knob" id="rotDial">
+                            <div class="dial-dot"></div>
+                        </div>
+                    </div>
+
+                    <div class="btn-set">
+                        <!-- Reset -->
+                        <div style="position:relative; margin-top:20px;">
+                            <button class="tree-btn action-tree" onclick="resetLevel()">
+                                <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#ea2027"/></svg>
+                            </button>
+                            <div class="btn-label">RESET</div>
+                        </div>
+                        <!-- Add -->
+                        <div style="position:relative;">
+                            <button class="tree-btn action-tree" onclick="nextLevel()">
+                                <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#009432"/></svg>
+                            </button>
+                            <div class="btn-label">ADD</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-btns">
+                <div>
+                    <button class="long-btn" onclick="exportCSV()"></button>
+                    <div class="long-lbl">SELECT</div>
+                </div>
+                <div>
+                    <button class="long-btn" onclick="alert('Controls:\nTree Arrows: Nudge Position\nBig Dial: Rotate\nGreen Tree: Add Level\nRed Tree: Reset')"></button>
+                    <div class="long-lbl">START</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* === RESPONSIVE === */
+function fitScreen() {
+    const el = document.getElementById('scaler');
+    const scale = Math.min(window.innerWidth/440, window.innerHeight/820);
+    el.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitScreen);
+window.addEventListener('load', fitScreen);
+
+/* === GEOMETRY (Big Trees, Centered) === */
+const P = { tip:0.8, tr_w:0.15, tr_h:0.2, bs_w:0.7, md_w:0.4, tp_w:0.25, t1:0.5, t2:0.25, bs:0.0, bt:-0.2 };
+const OFFSET_Y = 0.3;
+const SCALE = 1.3;
+
+const RAW_PTS = [
+    [0.0, P.tip], [P.tp_w/2, P.t1], [P.tp_w/4, P.t1],
+    [P.md_w/2, P.t2], [P.md_w/4, P.t2], [P.bs_w/2, P.bs],
+    [P.tr_w/2, P.bs], [P.tr_w/2, P.bt], [-P.tr_w/2, P.bt],
+    [-P.tr_w/2, P.bs], [-P.bs_w/2, P.bs], [-P.md_w/4, P.t2],
+    [-P.md_w/2, P.t2], [-P.tp_w/4, P.t1], [-P.tp_w/2, P.t1]
+];
+
+const TEMPLATE = RAW_PTS.map(([x, y]) => [x * SCALE, (y - OFFSET_Y) * SCALE]);
+
+/* === STATE === */
+const state = { lvl:1, trees:[], sel:0, col:false };
+const scores = JSON.parse(localStorage.getItem('tb_w_scores')||'{}');
+
+/* === MATH === */
+const rot = ([x,y], d) => { const r=d*Math.PI/180, c=Math.cos(r), s=Math.sin(r); return [x*c-y*s, x*s+y*c]; };
+const getPoly = (tx, ty, deg) => TEMPLATE.map(p => { const [rx, ry] = rot(p, deg); return [rx+tx, ry+ty]; });
+const getBounds = poly => {
+    let x1=Infinity,x2=-Infinity,y1=Infinity,y2=-Infinity;
+    poly.forEach(([x,y])=>{ if(x<x1)x1=x; if(x>x2)x2=x; if(y<y1)y1=y; if(y>y2)y2=y; });
+    return {x1,x2,y1,y2};
+}
+function intersect(a,b) {
+    const polys=[a,b];
+    for(let i=0;i<2;i++){
+        for(let j=0;j<polys[i].length;j++){
+            const p1=polys[i][j], p2=polys[i][(j+1)%polys[i].length];
+            const n=[-(p2[1]-p1[1]), p2[0]-p1[0]];
+            let minA=Infinity,maxA=-Infinity,minB=Infinity,maxB=-Infinity;
+            a.forEach(([x,y])=>{const d=x*n[0]+y*n[1];if(d<minA)minA=d;if(d>maxA)maxA=d});
+            b.forEach(([x,y])=>{const d=x*n[0]+y*n[1];if(d<minB)minB=d;if(d>maxB)maxB=d});
+            if(maxA<minB||maxB<minA)return false;
+        }
+    }
+    return true;
+}
+
+/* === CORE === */
+function init(l) {
+    state.lvl = l; state.trees = []; state.sel = 0;
+    document.getElementById('treeLayer').innerHTML = '';
+    document.getElementById('uiLvl').innerText = l;
+    document.getElementById('uiBest').innerText = scores[l] ? scores[l].toFixed(2) : '---';
+
+    for(let i=0; i<l; i++){
+        let r=1.0*Math.sqrt(i), th=i*2.4;
+        addTree(i, r*Math.cos(th), r*Math.sin(th), 0);
+    }
+    select(0); update();
+}
+
+function addTree(id, x, y, rot) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.classList.add('tree-group');
+    g.setAttribute('data-id', id);
+    const pts = TEMPLATE.map(p=>p.join(',')).join(' ');
+    g.innerHTML = `<polygon class="tree-poly" points="${pts}"/><polygon class="stroke-poly" points="${pts}" fill="none" stroke="none"/>`;
+    
+    // Drag
+    let start = {x:0,y:0}, off={x:0,y:0};
+    const startDrag = e => {
+        e.preventDefault(); e.stopPropagation(); select(id);
+        const p = getSVGPos(e); off = {x: p.x - state.trees[id].x, y: p.y - state.trees[id].y};
+        const move = ev => {
+            const c = getSVGPos(ev);
+            state.trees[id].x = c.x - off.x; state.trees[id].y = c.y - off.y;
+            update();
+        };
+        const end = () => {
+            window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', end);
+            window.removeEventListener('touchmove', move); window.removeEventListener('touchend', end);
+        };
+        window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+        window.addEventListener('touchmove', move, {passive:false}); window.addEventListener('touchend', end);
+    };
+    g.addEventListener('mousedown', startDrag); g.addEventListener('touchstart', startDrag, {passive:false});
+    
+    document.getElementById('treeLayer').appendChild(g);
+    state.trees.push({id, x, y, rot, el:g, poly:[]});
+}
+
+function select(id) {
+    state.sel = id;
+    state.trees.forEach(t => {
+        t.el.classList.toggle('selected', t.id===id);
+        if(t.id===id) document.getElementById('treeLayer').appendChild(t.el);
+    });
+}
+
+function update() {
+    let bx1=Infinity,bx2=-Infinity,by1=Infinity,by2=-Infinity;
+    state.col = false;
+
+    state.trees.forEach(t => {
+        t.poly = getPoly(t.x, t.y, t.rot);
+        t.el.setAttribute('transform', `translate(${t.x},${t.y}) rotate(${t.rot})`);
+        t.el.classList.remove('collision');
+        const b = getBounds(t.poly);
+        if(b.x1<bx1)bx1=b.x1; if(b.x2>bx2)bx2=b.x2; if(b.y1<by1)by1=b.y1; if(b.y2>by2)by2=b.y2;
+    });
+
+    for(let i=0; i<state.trees.length; i++){
+        for(let j=i+1; j<state.trees.length; j++){
+            if(intersect(state.trees[i].poly, state.trees[j].poly)){
+                state.trees[i].el.classList.add('collision');
+                state.trees[j].el.classList.add('collision');
+                state.col = true;
+            }
+        }
+    }
+
+    if(state.trees.length){
+        const w = bx2-bx1, h = by2-by1;
+        const s = Math.max(w,h);
+        const area = s*s;
+        
+        document.getElementById('uiScore').innerText = area.toFixed(2);
+        const box = document.getElementById('scoreBox');
+        box.setAttribute('x', bx1); box.setAttribute('y', by1);
+        box.setAttribute('width', s); box.setAttribute('height', s);
+        
+        if(!state.col) {
+            box.style.opacity = 1.0;
+            const best = scores[state.lvl] || Infinity;
+            if(area < best){ scores[state.lvl] = area; localStorage.setItem('tb_w_scores', JSON.stringify(scores)); document.getElementById('uiBest').innerText = area.toFixed(2); }
+        } else {
+            box.style.opacity = 0.5;
+        }
+    }
+}
+
+/* === INPUTS === */
+const svg = document.getElementById('gameSVG');
+const getSVGPos = e => {
+    const p = svg.createSVGPoint();
+    p.x = e.clientX||e.touches[0].clientX; p.y = e.clientY||e.touches[0].clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function nudge(dx, dy) {
+    if(state.sel===null) return;
+    const t = state.trees.find(x=>x.id===state.sel);
+    if(t) { t.x += dx; t.y += dy; update(); }
+}
+
+/* DIAL LOGIC */
+const dial = document.getElementById('rotDial');
+let dActive = false;
+let lastDeg = 0;
+
+const startRotate = e => {
+    dActive = true;
+    const rect = dial.parentElement.getBoundingClientRect();
+    const ex = e.clientX||e.touches[0].clientX, ey = e.clientY||e.touches[0].clientY;
+    lastDeg = Math.atan2(ey-(rect.top+rect.height/2), ex-(rect.left+rect.width/2)) * 180/Math.PI;
+};
+
+const doRotate = e => {
+    if(!dActive || state.sel===null) return;
+    e.preventDefault();
+    const rect = dial.parentElement.getBoundingClientRect();
+    const ex = e.clientX||e.touches[0].clientX, ey = e.clientY||e.touches[0].clientY;
+    const currDeg = Math.atan2(ey-(rect.top+rect.height/2), ex-(rect.left+rect.width/2)) * 180/Math.PI;
+    
+    let diff = currDeg - lastDeg;
+    while(diff < -180) diff += 360;
+    while(diff > 180) diff -= 360;
+
+    const SENSITIVITY = 0.25; 
+    const t = state.trees.find(x=>x.id===state.sel);
+    if(t) { t.rot += diff * SENSITIVITY; update(); }
+    
+    dial.style.transform = `rotate(${currDeg + 90}deg)`; 
+    lastDeg = currDeg;
+};
+
+dial.parentElement.addEventListener('mousedown', startRotate);
+dial.parentElement.addEventListener('touchstart', startRotate, {passive:false});
+window.addEventListener('mouseup', ()=>dActive=false);
+window.addEventListener('touchend', ()=>dActive=false);
+window.addEventListener('mousemove', doRotate);
+window.addEventListener('touchmove', doRotate, {passive:false});
+
+/* Buttons */
+function nextLevel() { init(state.lvl+1); }
+function resetLevel() { init(state.lvl); }
+function exportCSV() {
+    let c = "id,x,y,deg\n"+state.trees.map(t=>`${String(state.lvl).padStart(3,'0')}_${t.id},s${t.x.toFixed(6)},s${t.y.toFixed(6)},s${t.rot.toFixed(6)}`).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([c],{type:'text/csv'}));
+    a.download = `tree_lvl${state.lvl}.csv`; a.click();
+}
+
+fitScreen();
+init(1);
+
+</script>
+</body>
+</html>
