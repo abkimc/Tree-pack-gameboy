@@ -4,7 +4,7 @@
 
 This project explores the mathematical beauty of **Shape Packing**, wrapped in a nostalgic GameBoy-inspired interface using pure HTML, CSS, and JavaScript.
 
-![WhatsApp Image 2025-11-23 at 19 26 08_1db9bd0c](https://github.com/user-attachments/assets/833f411d-cc90-4923-9175-3852148c9b49)
+![WhatsApp Image 2025-11-23 at 19 26 08_1db9bd0c](https://github.com/user-attachments/assets/51748956-fcf9-4b7d-8f9b-f6a1e74ca725)
 
 You can play it here! 
 https://abkimc.github.io/Tree-pack-gameboy/
