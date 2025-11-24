@@ -14,6 +14,7 @@
             
             /* Screen */
             --screen-bg: #c4e538;
+            --lcd-off: #0f380f; /* Dark Black/Green for text */
             
             /* UI */
             --btn-a: #009432; 
@@ -88,6 +89,7 @@
             box-shadow: inset 2px 2px 10px rgba(0,0,0,0.1);
             position: relative;
             overflow: hidden;
+            color: var(--lcd-off);
         }
 
         .lcd::before {
@@ -102,43 +104,116 @@
             width: 30px; height: 30px;
             cursor: pointer; z-index: 50;
             opacity: 0.7; transition: opacity 0.2s;
-            fill: #2d3436;
+            fill: var(--lcd-off);
         }
         #muteBtn:active { transform: scale(0.9); }
         .mute-x { display: none; }
         #muteBtn.muted .mute-waves { display: none; }
         #muteBtn.muted .mute-x { display: inline; }
 
-        /* Flash Overlay */
-        #flash-layer {
-            position: absolute; inset: 0; background: white; 
-            opacity: 0; pointer-events: none; z-index: 90;
-            transition: opacity 0.1s;
-        }
-        
-        /* Message Overlay */
-        #msg-overlay {
+        /* OVERLAYS */
+        .overlay {
             position: absolute; inset: 0; 
-            background: rgba(0,0,0,0.8);
+            background: var(--screen-bg);
             display: none; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 100; text-align: center;
+            padding: 10px;
         }
-        #msg-overlay div {
-            color: #fff; font-size: 12px; line-height: 1.5; margin-bottom: 15px;
-            text-shadow: 2px 2px 0 #000;
+        
+        /* INTRO SCREEN */
+        #intro-overlay {
+            display: flex; z-index: 110;
+            cursor: pointer; /* Indicates clickable */
         }
-        .next-btn {
-            background: var(--btn-a); color: #fff; border: 2px solid #fff;
-            padding: 10px; font-family: inherit; font-size: 10px; cursor: pointer;
+        .intro-content {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: space-between; /* Spreads elements out */
+            align-items: center;
+            padding: 10px 0;
+        }
+        .intro-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px; line-height: 1.2;
+            text-align: center;
+            border-bottom: 3px solid var(--lcd-off);
+            padding-bottom: 5px; margin-bottom: 5px; margin-top: 10px;
+            color: var(--lcd-off);
+        }
+        .intro-text {
+            font-family: 'Share Tech Mono', monospace; 
+            font-size: 13px; font-weight: bold;
+            text-align: center; line-height: 1.3;
+            color: var(--lcd-off);
+        }
+        .intro-controls {
+            font-size: 11px; text-align: left;
+            width: 95%; border: 2px solid var(--lcd-off);
+            padding: 5px; margin: 5px 0;
+            color: var(--lcd-off);
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+        }
+        .blink-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            animation: blinker 0.8s step-end infinite;
+            margin-bottom: 10px;
+            background: var(--lcd-off);
+            color: var(--screen-bg);
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            display: block;
+        }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* VICTORY BUTTONS */
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .lcd-btn {
+            background: transparent; color: var(--lcd-off);
+            border: 2px solid var(--lcd-off);
+            padding: 10px; font-family: 'Share Tech Mono', monospace; 
+            font-weight: bold; font-size: 12px; cursor: pointer;
+            box-shadow: 2px 2px 0 var(--lcd-off);
+            text-transform: uppercase;
+        }
+        .lcd-btn:active { transform: translate(2px, 2px); box-shadow: none; }
+        .lcd-btn:hover { background: rgba(15, 56, 15, 0.1); }
+
+        #msg-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px; line-height: 1.5;
+            color: var(--lcd-off);
+        }
+
+        #manual-next {
+            position: absolute; top: 35px; left: 0; right: 0;
+            text-align: center; cursor: pointer;
+            font-family: 'Share Tech Mono', monospace; font-size: 12px;
+            color: var(--lcd-off); font-weight: bold; 
+            background: rgba(255,255,255,0.3);
+            padding: 2px; display: none; z-index: 60;
+            border-bottom: 1px solid var(--lcd-off);
+        }
+        #manual-next:hover { background: rgba(255,255,255,0.6); }
+
+        /* Flash Overlay */
+        #flash-layer {
+            position: absolute; inset: 0; 
+            background: #fff;
+            opacity: 0; pointer-events: none; z-index: 95;
+            transition: opacity 0.1s;
         }
 
         .hud-bar {
             position: absolute; top:0; left:0; right:0;
-            background: rgba(45, 52, 54, 0.1);
+            background: transparent;
             display: flex; justify-content: space-between; padding: 5px 8px;
-            font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #2d3436; font-weight: bold;
-            z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-family: 'Share Tech Mono', monospace; font-size: 14px; 
+            color: var(--lcd-off); font-weight: bold;
+            z-index: 5; border-bottom: 2px solid var(--lcd-off);
         }
 
         #gameSVG {
@@ -266,18 +341,43 @@
                     </svg>
                 </div>
 
-                <div id="flash-layer"></div>
-                <div id="msg-overlay">
-                    <div>GREAT JOB<br>NEXT LEVEL!</div>
-                    <button class="next-btn" onclick="nextLevel()">CONTINUE</button>
+                <!-- INTRO SCREEN (RETRO DESIGN) -->
+                <div id="intro-overlay" class="overlay" onclick="startGame()">
+                    <div class="intro-content">
+                        <div class="intro-title">TREEBOY</div>
+                        <div class="intro-text">
+                            GOAL: MINIMIZE AREA<br>
+                            PACK TREES TIGHT!<br>
+                            <br>
+                            BEAT THE GOAL TO ADVANCE.
+                        </div>
+                        <div class="intro-controls">
+                            ➤ <b>ARROWS:</b> NUDGE<br>
+                            ➤ <b>DRAG:</b> MOVE<br>
+                            ➤ <b>DIAL:</b> ROTATE
+                        </div>
+                        <button class="blink-btn">PRESS START</button>
+                    </div>
                 </div>
 
+                <!-- FLASH & MSG OVERLAYS -->
+                <div id="flash-layer"></div>
+                <div id="msg-overlay" class="overlay">
+                    <div id="msg-text">GREAT JOB<br>NEXT LEVEL!</div>
+                    <div class="btn-row" id="win-btns">
+                        <button class="lcd-btn" onclick="nextLevel()">NEXT LEVEL</button>
+                        <button class="lcd-btn secondary" onclick="enableImproveMode()">IMPROVE SCORE</button>
+                    </div>
+                </div>
+
+                <!-- MANUAL NEXT LINK -->
+                <div id="manual-next" onclick="manualNextLevel()"> >> NEXT LEVEL >> </div>
+
                 <div class="hud-bar">
-                    <div>GOAL:<span id="uiGoal" style="color:#2980b9">---</span></div>
+                    <div>GOAL:<span id="uiGoal" style="color:var(--lcd-off)">---</span></div>
                     <div>AREA:<span id="uiScore">0.00</span></div>
                 </div>
 
-                <!-- VIEWBOX SET TO 3.5 (Zoomed relative to SCALE 1.0) -->
                 <svg id="gameSVG" viewBox="-1.75 -1.75 3.5 3.5" preserveAspectRatio="xMidYMid meet">
                     <g id="treeLayer"></g>
                     <rect id="scoreBox" x="0" y="0" width="0" height="0"></rect>
@@ -289,7 +389,7 @@
             </div>
         </div>
 
-        <!-- AUDIO ELEMENT - REQUIRES 'theme.mp3' IN THE SAME FOLDER -->
+        <!-- AUDIO ELEMENT -->
         <audio id="bgm" loop>
             <source src="theme.mp3" type="audio/mpeg">
         </audio>
@@ -319,7 +419,6 @@
                     </div>
 
                     <div class="btn-set">
-                        <!-- RESET BUTTON (NOW GREEN) -->
                          <div style="position:relative;">
                             <button class="tree-btn action-tree" onclick="resetLevel()">
                                 <svg class="tree-icon" viewBox="0 0 50 60"><path d="M25,5 L5,25 L15,25 L5,45 L15,45 L10,60 L40,60 L35,45 L45,45 L35,25 L45,25 Z" fill="#009432"/></svg>
@@ -336,8 +435,9 @@
                     <div class="long-lbl">MUTE</div>
                 </div>
                 <div>
-                    <button class="long-btn" onclick="alert('Controls:\nArrows: Nudge\nDial: Rotate\nRed: Reset')"></button>
-                    <div class="long-lbl">HELP</div>
+                    <!-- START BUTTON -->
+                    <button class="long-btn" onclick="handleStartBtn()"></button>
+                    <div class="long-lbl">START</div>
                 </div>
             </div>
         </div>
@@ -355,14 +455,7 @@ const Analytics = {
     pageStartTime: Date.now(),
     levelStartTime: Date.now(),
     
-    // Action Counters
-    actions: {
-        arrow: 0,
-        dial: 0,
-        drag: 0
-    },
-    
-    // Platform Detection
+    actions: { arrow: 0, dial: 0, drag: 0 },
     platform: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'PC',
 
     formURL: "https://docs.google.com/forms/d/e/1FAIpQLSdDspDnJk9WFa8GyZ2dLHlKdrHfusqqHRsRazuj7LYYrnY-_w/formResponse",
@@ -376,14 +469,15 @@ const Analytics = {
         platform: "entry.1216688490", 
         arrowCount: "entry.830107730", 
         dialCount: "entry.412348719",    
-        dragCount: "entry.1610689390"     
+        dragCount: "entry.1610689390",
+        score: "entry.634185830"
     },
 
-    log: function(type, level) {
+    log: function(type, level, score = 0) {
         const now = Date.now();
         const duration = ((now - this.levelStartTime) / 1000).toFixed(2);
         
-        console.log(`[Analytics] ${type} | Lvl: ${level} | Dur: ${duration}s | Platform: ${this.platform} | Arr: ${this.actions.arrow} | Dial: ${this.actions.dial} | Drag: ${this.actions.drag}`);
+        console.log(`[Analytics] ${type} | Lvl: ${level} | Score: ${score} | Dur: ${duration}s`);
 
         const formData = new FormData();
         formData.append(this.entryIDs.session, this.sessionID);
@@ -395,9 +489,9 @@ const Analytics = {
         formData.append(this.entryIDs.arrowCount, this.actions.arrow);
         formData.append(this.entryIDs.dialCount, this.actions.dial);
         formData.append(this.entryIDs.dragCount, this.actions.drag);
+        formData.append(this.entryIDs.score, score);
 
         fetch(this.formURL, { method: "POST", mode: "no-cors", body: formData })
-            .then(() => console.log("Analytics sent."))
             .catch(e => console.warn("Analytics error:", e));
 
         if(type === 'LEVEL_WIN' || type === 'LEVEL_RESET' || type === 'LEVEL_START') {
@@ -410,20 +504,24 @@ const Analytics = {
 };
 
 /* =========================================
-   AUDIO: HTML5 AUDIO TAG (External File)
+   AUDIO & START LOGIC
    ========================================= */
 const bgm = document.getElementById('bgm');
+let isGameActive = false;
 
-function tryStartAudio() {
-    bgm.volume = 0.5;
-    bgm.play().catch(e => {
-        console.log("Audio waiting for user interaction");
-    });
+function handleStartBtn() {
+    if(!isGameActive) {
+        startGame();
+    }
 }
 
-// Start audio on first click/tap
-window.addEventListener('mousedown', tryStartAudio, {once:true});
-window.addEventListener('touchstart', tryStartAudio, {once:true});
+function startGame() {
+    isGameActive = true;
+    document.getElementById('intro-overlay').style.display = 'none';
+    bgm.volume = 0.5;
+    bgm.play().catch(e => console.log("Audio play failed", e));
+    init(1);
+}
 
 function toggleMute() { 
     bgm.muted = !bgm.muted;
@@ -445,22 +543,11 @@ window.addEventListener('load', fitScreen);
 
 const P = { tip:0.8, tr_w:0.15, tr_h:0.2, bs_w:0.7, md_w:0.4, tp_w:0.25, t1:0.5, t2:0.25, bs:0.0, bt:-0.2 };
 const OFFSET_Y = 0.3;
-
-// SCALE 1.0 ensures area math is consistent (1 tree = 1.0 area)
 const SCALE = 1.0; 
 
-// GOAL TABLE
 const LEVEL_GOALS = {
-    1: 0.8,
-    2: 1.4,
-    3: 2.1,
-    4: 3.1,
-    5: 3.8,
-    6: 4.1,
-    7: 4.7,
-    8: 5.1,
-    9: 5.9,
-    10: 6.4
+    1: 0.8, 2: 1.4, 3: 2.1, 4: 3.1, 5: 3.8,
+    6: 4.1, 7: 4.7, 8: 5.1, 9: 5.9, 10: 6.4
 };
 
 const RAW_PTS = [
@@ -473,8 +560,7 @@ const RAW_PTS = [
 
 const TEMPLATE = RAW_PTS.map(([x, y]) => [x * SCALE, (y - OFFSET_Y) * SCALE]);
 
-const state = { lvl:1, trees:[], sel:0, col:false, locked: false, baseArea: 0 };
-const scores = JSON.parse(localStorage.getItem('tb_w_scores')||'{}');
+const state = { lvl:1, trees:[], sel:0, col:false, locked: true, isImproving: false }; 
 
 const rot = ([x,y], d) => { const r=d*Math.PI/180, c=Math.cos(r), s=Math.sin(r); return [x*c-y*s, x*s+y*c]; };
 const getPoly = (tx, ty, deg) => TEMPLATE.map(p => { const [rx, ry] = rot(p, deg); return [rx+tx, ry+ty]; });
@@ -499,30 +585,23 @@ function intersect(a,b) {
 }
 
 function init(l) {
-    if (l > 10) return; 
-
-    state.lvl = l; state.trees = []; state.sel = 0; state.locked = false;
+    if(!isGameActive) return;
+    
+    state.lvl = l; state.trees = []; state.sel = 0; 
+    state.locked = false; state.isImproving = false;
+    
     document.getElementById('treeLayer').innerHTML = '';
     document.getElementById('uiLvl').innerText = l;
     document.getElementById('msg-overlay').style.display = 'none';
+    document.getElementById('manual-next').style.display = 'none';
 
     Analytics.log('LEVEL_START', l);
 
-    if(state.baseArea === 0) {
-        const tempPoly = getPoly(0,0,0);
-        const b = getBounds(tempPoly);
-        const s = Math.max(b.x2-b.x1, b.y2-b.y1);
-        state.baseArea = s*s;
-    }
-
-    // --- UPDATED GOAL LOGIC ---
-    let winThreshold = LEVEL_GOALS[l] || (l * 0.8); 
-    
+    const winThreshold = LEVEL_GOALS[l] || (l * 0.8); 
     document.getElementById('uiGoal').innerText = winThreshold.toFixed(2);
     document.getElementById('uiGoal').setAttribute('data-target', winThreshold);
 
     for(let i=0; i<l; i++){
-        // Keep trees spawning in center to stay on screen
         let r=0.5*Math.sqrt(i), th=i*2.4;
         addTree(i, r*Math.cos(th), r*Math.sin(th), 0);
     }
@@ -540,10 +619,7 @@ function addTree(id, x, y, rot) {
     const startDrag = e => {
         if(state.locked) return;
         e.preventDefault(); e.stopPropagation(); select(id);
-        
-        // Track Drag Action
         Analytics.actions.drag++;
-
         const p = getSVGPos(e); off = {x: p.x - state.trees[id].x, y: p.y - state.trees[id].y};
         const move = ev => {
             const c = getSVGPos(ev);
@@ -559,7 +635,6 @@ function addTree(id, x, y, rot) {
         window.addEventListener('touchmove', move, {passive:false}); window.addEventListener('touchend', end);
     };
     g.addEventListener('mousedown', startDrag); g.addEventListener('touchstart', startDrag, {passive:false});
-    
     document.getElementById('treeLayer').appendChild(g);
     state.trees.push({id, x, y, rot, el:g, poly:[]});
 }
@@ -604,10 +679,7 @@ function update() {
         box.setAttribute('x', bx1); box.setAttribute('y', by1);
         box.setAttribute('width', s); box.setAttribute('height', s);
         box.style.opacity = state.col ? 0.5 : 1.0;
-        
-        return area;
     }
-    return 0;
 }
 
 function checkWin() {
@@ -616,7 +688,8 @@ function checkWin() {
     const targetGoal = parseFloat(document.getElementById('uiGoal').getAttribute('data-target'));
 
     if(currentArea <= targetGoal) {
-        Analytics.log('LEVEL_WIN', state.lvl);
+        if(state.isImproving) return;
+        Analytics.log('LEVEL_WIN', state.lvl, currentArea);
         triggerVictory();
     }
 }
@@ -625,43 +698,57 @@ function triggerVictory() {
     state.locked = true;
     const flashLayer = document.getElementById('flash-layer');
     
+    // FLASH LOGIC - 3 Times
     let count = 0;
     const runFlash = () => {
         if(count < 3) {
-            flashLayer.style.opacity = 0.8;
+            flashLayer.style.opacity = 0.8; // Visible Flash
             setTimeout(() => {
                 flashLayer.style.opacity = 0;
                 count++;
-                if(count < 3) setTimeout(runFlash, 1000); 
-                else setTimeout(showMsg, 1000); 
-            }, 150); 
+                if(count < 3) setTimeout(runFlash, 300); 
+                else setTimeout(showMsg, 500); 
+            }, 100); 
         }
     };
     
     const showMsg = () => {
         const overlay = document.getElementById('msg-overlay');
-        const btn = overlay.querySelector('button');
-        const txt = overlay.querySelector('div');
+        const txt = overlay.querySelector('#msg-text');
+        const btnRow = document.getElementById('win-btns');
 
         if(state.lvl >= 10) {
             txt.innerHTML = "GREAT JOB<br>YOU CAN NOW WORK<br>AS AN ELF FOR SANTA";
-            btn.innerText = "RESTART";
-            btn.onclick = () => {
-                state.lvl = 1;
-                init(1);
-            };
+            btnRow.innerHTML = `<button class="lcd-btn" onclick="restartGame()">RESTART</button>`;
         } else {
             txt.innerHTML = "GREAT JOB<br>NEXT LEVEL!";
-            btn.innerText = "CONTINUE";
-            btn.onclick = nextLevel;
+            btnRow.innerHTML = `
+                <button class="lcd-btn" onclick="nextLevel()">NEXT LEVEL</button>
+                <button class="lcd-btn secondary" onclick="enableImproveMode()">IMPROVE SCORE</button>
+            `;
         }
         overlay.style.display = 'flex';
-        state.locked = false;
     };
 
     runFlash();
 }
 
+/* IMPROVE MODE LOGIC */
+function enableImproveMode() {
+    document.getElementById('msg-overlay').style.display = 'none';
+    state.locked = false;
+    state.isImproving = true;
+    document.getElementById('manual-next').style.display = 'block';
+    Analytics.log('IMPROVE_START', state.lvl);
+}
+
+function manualNextLevel() {
+    const currentArea = parseFloat(document.getElementById('uiScore').innerText);
+    Analytics.log('IMPROVE_FINISH', state.lvl, currentArea);
+    nextLevel();
+}
+
+/* CONTROLS */
 const svg = document.getElementById('gameSVG');
 const getSVGPos = e => {
     const p = svg.createSVGPoint();
@@ -733,9 +820,11 @@ function resetLevel() {
     Analytics.log('LEVEL_RESET', state.lvl);
     init(state.lvl); 
 }
+function restartGame() {
+    init(1);
+}
 
 fitScreen();
-init(1);
 
 </script>
 </body>
