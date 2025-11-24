@@ -4,6 +4,10 @@
 
 This project explores the mathematical beauty of **Shape Packing**, wrapped in a nostalgic GameBoy-inspired interface using pure HTML, CSS, and JavaScript.
 
+![WhatsApp Image 2025-11-23 at 19 26 08_35d5c07a](https://github.com/user-attachments/assets/efbc3e61-700b-40e8-8f3c-a32e765746a2)
+
+You can play it here! 
+https://abkimc.github.io/Tree-pack-gameboy/
 ---
 
 ## 🧩 What is Shape Packing?
@@ -61,11 +65,4 @@ The 2025 challenge focused on minimizing the area of bounding boxes for various 
 *   **Music:** "Return to the 8-bit past" - An upbeat chiptune track perfect for puzzle solving.
     *   Source: [Pixabay - Return to the 8-bit past](https://pixabay.com/music/video-games-return-to-the-8-bit-past-301282/)
 
----
 
-## 🚀 Installation
-
-1.  Clone the repository.
-2.  Ensure `index.html` and `theme.mp3` are in the same folder.
-3.  Open `index.html` in any modern web browser.
-4.  Click anywhere on the page to start the audio engine.
